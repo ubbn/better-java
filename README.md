@@ -1,3 +1,5 @@
+# Better Java
+
 Java is one of the most popular programming languages around, but no one seems
 to enjoy using it. Well, Java is actually an alright programming language, and
 since Java 8 came out recently, I decided to compile a list of libraries, 
@@ -9,12 +11,63 @@ suggesting additions.
 This article was originally posted on 
 [my blog](https://www.seancassidy.me/better-java.html).
 
-# Style
+Read this in other languages: [English](README.md), [简体中文](README.zh-cn.md)
+
+## Table Of Contents
+
+* [Style](#style)
+  * [Structs](#structs)
+    * [The Builder Pattern](#the-builder-pattern)
+    * [Immutable Object Generation](#immutable-object-generation)
+  * [Exceptions](#exceptions)
+  * [Dependency injection](#dependency-injection)
+  * [Avoid Nulls](#avoid-nulls)
+  * [Immutable-by-default](#immutable-by-default)
+  * [Avoid lots of Util classes](#avoid-lots-of-util-classes)
+  * [Formatting](#formatting)
+    * [Javadoc](#javadoc)
+  * [Streams](#streams)
+* [Deploying](#deploying)
+  * [Frameworks](#frameworks)
+  * [Maven](#maven)
+    * [Dependency Convergence](#dependency-convergence)
+  * [Continuous Integration](#continuous-integration)
+  * [Maven repository](#maven-repository)
+  * [Configuration management](#configuration-management)
+* [Libraries](#libraries)
+  * [Missing Features](#missing-features)
+    * [Apache Commons](#apache-commons)
+    * [Guava](#guava)
+    * [Gson](#gson)
+    * [Java Tuples](#java-tuples)
+    * [Javaslang](#javaslang)
+    * [Joda-Time](#joda-time)
+    * [Lombok](#lombok)
+    * [Play framework](#play-framework)
+    * [SLF4J](#slf4j)
+    * [jOOQ](#jooq)
+  * [Testing](#testing)
+    * [jUnit 4](#junit-4)
+    * [jMock](#jmock)
+    * [AssertJ](#assertj)
+* [Tools](#tools)
+  * [IntelliJ IDEA](#intellij-idea)
+    * [Chronon](#chronon)
+  * [JRebel](#jrebel)
+  * [The Checker Framework](#the-checker-framework)
+  * [Code Quality](#code-quality)
+  * [Eclipse Memory Analyzer](#eclipse-memory-analyzer)
+* [Resources](#resources)
+  * [Books](#books)
+  * [Podcasts](#podcasts)
+  * [Videos](#videos)
+
+## Style
 
 Traditionally, Java was programmed in a very verbose enterprise JavaBean style.
 The new style is much cleaner, more correct, and easier on the eyes.
 
-## Structs
+### Structs
 
 One of the simplest things we as programmers do is pass around data. The
 traditional way to do this is to define a JavaBean:
@@ -59,7 +112,7 @@ If you're storing objects like Map or List that can be modified easily, you
 should instead use ImmutableMap or ImmutableList, which is discussed in the 
 section about immutability.
 
-### The Builder Pattern
+#### The Builder Pattern
 
 If you have a rather complicated object that you want to build a struct for,
 consider the Builder pattern.
@@ -110,9 +163,26 @@ final ComplicatedDataHolder cdh = new ComplicatedDataHolder.Builder()
 There are [better examples of Builders elsewhere][builderex] but this should
 give you a taste for what it's like. This ends up with a lot of the boilerplate
 we were trying to avoid, but it gets you immutable objects and a very fluent
-interface.
+interface. 
 
-## Exceptions
+Instead of creating builder objects by hand, consider using one of the many 
+libraries which can help you generate builders.
+
+#### Immutable Object Generation
+
+If you create many immutable objects by hand, consider using the annotation 
+processor to generate them from interfaces automatically. This minimizes 
+boilerplate code, reduces probability of bugs and promotes immutability. See
+this [presentation](https://docs.google.com/presentation/d/14u_h-lMn7f1rXE1nDiLX0azS3IkgjGl5uxp5jGJ75RE/edit#slide=id.g2a5e9c4a8_00)
+for an interesting discussion of some of the problems with normal Java coding
+patterns.
+
+Some great code generation libraries are [immutables]
+(https://github.com/immutables/immutables), Google's 
+[auto-value](https://github.com/google/auto/tree/master/value) and 
+[Lombok][lombok].
+
+### Exceptions
 
 [Checked exceptions][checkedex] should be used with caution, if at all. They 
 force your users to add many try/catch blocks and wrap your exceptions in their 
@@ -125,7 +195,7 @@ One nifty trick is to put RuntimeExceptions in your method's throws declaration.
 This has no effect on the compiler, but will inform your users via documentation
 that these exceptions can be thrown.
 
-## Dependency injection
+### Dependency injection
 
 This is more of a software engineering section than a Java section, but one of
 the best ways to write testable software is to use [dependency injection][di]
@@ -143,12 +213,15 @@ library or Google's [Guice][guice]. They don't use Spring's XML
 configuration file format, and instead they put the injection logic in
 annotations and in code.
 
-## Avoid Nulls
+### Avoid Nulls
 
 Try to avoid using nulls when you can. Do not return null collections when you
 should have instead returned an empty collection. If you're going to use null, 
 consider the [@Nullable][nullable] annotation. [IntelliJ IDEA][intellij] has 
 built-in support for the @Nullable annotation.
+
+Read more about why not to use nulls in
+[The worst mistake of computer science][the-worst-mistake-of-computer-science].
 
 If you're using [Java 8][java8], you can use the excellent new 
 [Optional][optional] type. If a value may or may not be present, wrap it in
@@ -190,7 +263,7 @@ Which is much better than chained if null checks. The only downside of using
 Optional is that the standard library doesn't have good Optional support, so
 dealing with nulls is still required there.
 
-## Immutable-by-default
+### Immutable-by-default
 
 Unless you have a good reason to make them otherwise, variables, classes, and
 collections should be immutable.
@@ -216,16 +289,16 @@ Now you can be sure that fooWidget won't be accidentally reassigned. The *final*
 keyword works with if/else blocks and with try/catch blocks. Of course, if the
 *fooWidget* itself isn't immutable you could easily mutate it.
 
-Collections should, whenever possible, use the Guava [ImmutableMap][immutablemap],
-[ImmutableList][immutablelist], or [ImmutableSet][immutableset] classes. These
-have builders so that you can build them up dynamically and then mark them 
-immutable by calling the build method.
+Collections should, whenever possible, use the Guava
+[ImmutableMap][immutablemap], [ImmutableList][immutablelist], or
+[ImmutableSet][immutableset] classes. These have builders so that you can build
+them up dynamically and then mark them immutable by calling the build method.
 
 Classes should be made immutable by declaring fields immutable (via *final*)
 and by using immutable collections. Optionally, you can make the class itself 
 *final* so that it can't be extended and made mutable.
 
-## Avoid lots of Util classes
+### Avoid lots of Util classes
 
 Be careful if you find yourself adding a lot of methods to a Util class.
 
@@ -245,26 +318,12 @@ These classes, at first, seem attractive because the methods that go in them
 don't really belong in any one place. So you throw them all in here in the
 name of code reuse.
 
-The cure is worse than the disease. Put these classes where they belong, or 
-if you must have common methods like this, consider [Java 8][java8]'s default
-methods on interfaces. Then you could lump common actions into interfaces. 
-And, since they're interfaces, you can implement multiple of them.
+The cure is worse than the disease. Put these classes where they belong and
+refactor aggressively. Don't name classes, packages, or libraries anything
+too generic, such as "MiscUtils" or "ExtrasLibrary". This encourages dumping 
+unrelated code there.
 
-```java
-public interface Thrower {
-    default void throwIfCondition(boolean condition, String msg) {
-        // ...
-    }
-
-    default void throwAorB(Throwable a, Throwable b, boolean throwA) {
-        // ...
-    }
-}
-```
-
-Then every class which needs it can simply implement this interface.
-
-## Formatting
+### Formatting
 
 Formatting is so much less important than most programmers make it out to be.
 Does consistency show that you care about your craft and does it help others
@@ -275,7 +334,7 @@ If you absolutely need a code formatting guide, I highly recommend
 [Google's Java Style][googlestyle] guide. The best part of that guide is the
 [Programming Practices][googlepractices] section. Definitely worth a read.
 
-### Javadoc
+#### Javadoc
 
 Documenting your user facing code is important. And this means 
 [using examples][javadocex] and using sensible descriptions of variables,
@@ -286,7 +345,7 @@ don't have anything to say about what an argument is, or if it's obvious,
 don't document it. Boilerplate documentation is worse than no documentation at
 all, as it tricks your users into thinking that there is documentation.
 
-## Streams
+### Streams
 
 [Java 8][java8] has a nice [stream][javastream] and lambda syntax. You could
 write code like this:
@@ -311,13 +370,13 @@ for (String str : list) {
 
 This allows you to write more fluent code, which is more readable.
 
-# Deploying
+## Deploying
 
 Deploying Java properly can be a bit tricky. There are two main ways to deploy
 Java nowadays: use a framework or use a home grown solution that is more
 flexible.
 
-## Frameworks
+### Frameworks
 
 Because deploying Java isn't easy, frameworks have been made which can help.
 Two of the best are [Dropwizard][dropwizard] and [Spring Boot][springboot].
@@ -333,7 +392,7 @@ However, they can be somewhat inflexible and are rather opinionated, so if
 your project doesn't fit with the choices the developers of your framework
 made, you'll have to migrate to a more hand-rolled configuration.
 
-## Maven
+### Maven
 
 **Good alternative**: [Gradle][gradle].
 
@@ -370,7 +429,7 @@ If you want internal dependencies, that should be managed by each individual
 project's **<dependencyManagement>** section. Otherwise it would be difficult
 to keep the root POM version number sane.
 
-### Dependency Convergence
+#### Dependency Convergence
 
 One of the best parts about Java is the massive amount of third party
 libraries which do everything. Essentially every API or toolkit has a Java SDK
@@ -397,7 +456,7 @@ one project's version, then exclude makes sense. On the other hand, if you
 want to be explicit about it, you can pick a version, although you'll need to
 update it when you update the other dependencies.
 
-## Continuous Integration
+### Continuous Integration
 
 Obviously you need some kind of continuous integration server which is going
 to continuously build your SNAPSHOT versions and tag builds based on git tags.
@@ -408,7 +467,7 @@ Code coverage is useful, and [Cobertura][cobertura] has
 [a good Maven plugin][coberturamaven] and CI support. There are other code
 coverage tools for Java, but I've used Cobertura.
 
-## Maven repository
+### Maven repository
 
 You need a place to put your JARs, WARs, and EARs that you make, so you'll
 need a repository.
@@ -420,7 +479,7 @@ You should have your own Artifactory/Nexus installation and
 [mirror your dependencies][artifactorymirror] onto it. This will stop your
 build from breaking because some upstream Maven repository went down.
 
-## Configuration management
+### Configuration management
 
 So now you've got your code compiled, your repository set up, and you need to
 get your code out in your development environment and eventually push it to
@@ -434,18 +493,18 @@ alternatives.
 
 Regardless of what tool you choose, don't forget to automate your deployments.
 
-# Libraries
+## Libraries
 
 Probably the best feature about Java is the extensive amount of libraries it 
 has. This is a small collection of libraries that are likely to be applicable
 to the largest group of people.
 
-## Missing Features
+### Missing Features
 
 Java's standard library, once an amazing step forward, now looks like it's
 missing several key features.
 
-### Apache Commons
+#### Apache Commons
 
 [The Apache Commons project][apachecommons] has a bunch of useful libraries.
 
@@ -459,7 +518,7 @@ strings. Don't waste your time rewriting those.
 [FileUtils.copyDirectory][copydir], [FileUtils.writeStringToFile][writestring],
 [IOUtils.readLines][readlines] and much more.
 
-### Guava
+#### Guava
 
 [Guava][guava] is Google's excellent here's-what-Java-is-missing library. It's
 almost hard to distill everything that I like about this library, but I'm
@@ -470,9 +529,9 @@ network access, disk access, memoize functions, or anything really. Just
 implement a [CacheBuilder][cachebuilder] which tells Guava how to build your
 cache and you're all set!
 
-**Immutable** collections. There's a bunch of these: [ImmutableMap][immutablemap],
-[ImmutableList][immutablelist], or even [ImmutableSortedMultiSet][immutablesorted]
- if that's your style.
+**Immutable** collections. There's a bunch of these:
+[ImmutableMap][immutablemap], [ImmutableList][immutablelist], or even
+[ImmutableSortedMultiSet][immutablesorted] if that's your style.
 
 I also like writing mutable collections the Guava way:
 
@@ -495,7 +554,7 @@ fluent code without [Java 8][java8]'s stream support.
 Guava has simple things too, like a **Joiner** that joins strings on 
 separators and a [class to handle interrupts][uninterrupt] by ignoring them.
 
-### Gson
+#### Gson
 
 Google's [Gson][gson] library is a simple and fast JSON parsing library. It
 works like this:
@@ -510,7 +569,7 @@ final FooWidget newFooWidget = gson.fromJson(json, FooWidget.class);
 It's really easy and a pleasure to work with. The [Gson user guide][gsonguide]
 has many more examples.
 
-### Java Tuples
+#### Java Tuples
 
 One of my on going annoyances with Java is that it doesn't have tuples built
 into the standard library. Luckily, the [Java tuples][javatuples] project fixes
@@ -525,7 +584,45 @@ Pair<String, Integer> func(String input) {
 }
 ```
 
-### Joda-Time
+#### Javaslang
+
+[Javaslang][javaslang] is a functional library, designed to add missing features
+that should have been part of Java 8. Some of these features are
+
+* an all-new functional collection library
+* tightly integrated tuples
+* pattern matching
+* throughout thread-safety because of immutability
+* eager and lazy data types
+* null-safety with the help of Option
+* better exception handling with the help of Try
+
+There are several Java libraries which depend on the original Java collections.
+These are restricted to stay compatible to classes which were created with an
+object-oriented focus and designed to be mutable. The Javaslang collections for
+Java are a completely new take, inspired by Haskell, Clojure and Scala. They are
+created with a functional focus and follow an immutable design.
+
+Code like this is automatically thread safe and try-catch free:
+
+```java
+// Success/Failure containing the result/exception
+public static Try<User> getUser(int userId) {
+    return Try.of(() -> DB.findUser(userId))
+        .recover(x -> Match.of(x)
+            .whenType(RemoteException.class).then(e -> ...)
+            .whenType(SQLException.class).then(e -> ...));
+}
+
+// Thread-safe, reusable collections
+public static List<String> sayByeBye() {
+    return List.of("bye, "bye", "collect", "mania")
+               .map(String::toUpperCase)
+               .intersperse(" ");
+}
+```
+
+#### Joda-Time
 
 [Joda-Time][joda] is easily the best time library I've ever used. Simple,
 straightforward, easy to test. What else can you ask for? 
@@ -533,7 +630,7 @@ straightforward, easy to test. What else can you ask for?
 You only need this if you're not yet on Java 8, as that has its own new 
 [time][java8datetime] library that doesn't suck.
 
-### Lombok
+#### Lombok
 
 [Lombok][lombok] is an interesting library. Through annotations, it allows you
 to reduce the boilerplate that Java suffers from so badly.
@@ -556,7 +653,7 @@ foo.setVar(5);
 And there's [so much more][lombokguide]. I haven't used Lombok in production
 yet, but I can't wait to.
 
-### Play framework
+#### Play framework
 
 **Good alternatives**: [Jersey][jersey] or [Spark][spark]
 
@@ -579,7 +676,7 @@ Scala-first, but it's still good to use in Java.
 If you're used to micro-frameworks like Flask in Python, [Spark][spark] will
 be very familiar. It works especially well with Java 8.
 
-### SLF4J
+#### SLF4J
 
 There are a lot of Java logging solutions out there. My favorite is
 [SLF4J][slf4j] because it's extremely pluggable and can combine logs from many
@@ -589,7 +686,7 @@ java.util.logging, JCL, and log4j? SLF4J is for you.
 The [two-page manual][slf4jmanual] is pretty much all you'll need to get
 started.
 
-### jOOQ
+#### jOOQ
 
 I dislike heavy ORM frameworks because I like SQL. So I wrote a lot of
 [JDBC templates][jdbc] and it was sort of hard to maintain. [jOOQ][jooq] is a
@@ -610,11 +707,13 @@ create.select(BOOK.TITLE, AUTHOR.FIRST_NAME, AUTHOR.LAST_NAME)
 
 Using this and the [DAO][dao] pattern, you can make database access a breeze.
 
-## Testing
+### Testing
 
 Testing is critical to your software. These packages help make it easier.
 
-### jUnit 4
+#### jUnit 4
+
+**Good alternative**: [TestNG][testng].
 
 [jUnit][junit] needs no introduction. It's the standard tool for unit testing
 in Java.
@@ -624,7 +723,7 @@ But you're probably not using jUnit to its full potential. jUnit supports
 so much boilerplate, [theories][junittheories] to randomly test certain code,
 and [assumptions][junitassume].
 
-### jMock
+#### jMock
 
 If you've done your dependency injection, this is where it pays off: mocking
 out code which has side effects (like talking to a REST server) and still
@@ -661,7 +760,7 @@ If you have to set up the same dependency over and over, you should probably
 put that in a [test fixture][junitfixture] and put *assertIsSatisfied* in an
 *@After* fixture.
 
-### AssertJ
+#### AssertJ
 
 Do you ever do this with jUnit?
 
@@ -684,9 +783,9 @@ assertThat(some.testMethod()).hasSize(4)
 
 This fluent interface makes your tests more readable. What more could you want?
 
-# Tools
+## Tools
 
-## IntelliJ IDEA
+### IntelliJ IDEA
 
 **Good alternatives**: [Eclipse][eclipse] and [Netbeans][netbeans]
 
@@ -700,7 +799,7 @@ The free community edition is good enough for me, but there are loads of great
 features in the Ultimate edition like database tools, Spring Framework support
 and Chronon.
 
-### Chronon
+#### Chronon
 
 One of my favorite features of GDB 7 was the ability to travel back in time
 when debugging. This is possible with the [Chronon IntelliJ plugin][chronon]
@@ -710,7 +809,9 @@ You get variable history, step backwards, method history and more. It's a
 little strange to use the first time, but it can help debug some really
 intricate bugs, Heisenbugs and the like.
 
-## JRebel
+### JRebel
+
+**Good alternative**: [DCEVM](https://github.com/dcevm/dcevm)
 
 Continuous integration is often a goal of software-as-a-service products. What
 if you didn't even need to wait for the build to finish to see code changes
@@ -720,7 +821,7 @@ That's what [JRebel][jrebel] does. Once you hook up your server to your JRebel
 client, you can see changes on your server instantly. It's a huge time savings
 when you want to experiment quickly.
 
-## The Checker Framework
+### The Checker Framework
 
 Java's type system is pretty weak. It doesn't differentiate between Strings
 and Strings that are actually regular expressions, nor does it do any
@@ -731,7 +832,37 @@ It uses annotations like *@Nullable* to check types. You can even define
 [your own annotations][customchecker] to make the static analysis done even
 more powerful.
 
-## Eclipse Memory Analyzer
+### Code Quality
+
+Even when following best practices, even the best developer will make mistakes.
+There are a number of tools out there that you can use to validate your Java
+code to detect problems in your code. Below is a small selection of some of the
+most popular tools. Many of these integrate with popular IDE's such as Eclipse
+or IntelliJ enabling you to spot mistakes in your code sooner.
+
+* **[Checkstyle](http://checkstyle.sourceforge.net/ "Checkstyle")**: A static
+code analyzer whose primary focus is to ensure that your code adheres to a
+coding standard. Rules are defined in an XML file that can be checked into
+source control alongside your code.
+* **[FindBugs](http://findbugs.sourceforge.net/ "FindBugs")**: Aims to spot code
+that can result in bugs/errors. Runs as a standalone process but has good
+integration into modern IDE's and build tools.
+* **[PMD](https://pmd.github.io/ "PMD")**: Similar to FindBugs, PMD aims to spot
+common mistakes & possible tidy-ups in your code. What rules are run against
+your code can be controlled via an XML file you can commit alongside your code.
+* **[SonarQube](http://www.sonarqube.org/ "SonarQube")**: Unlike the previous
+tools that run locally, SonarQube runs on a server that you submit your code to
+for analysis. It provides a web GUI where you are able to gain a wealth of
+information about your code such as bad practices, potential bugs, percentage
+test coverage and the level of
+[technical debt](https://en.wikipedia.org/wiki/Technical_debt "Technical Debt on Wikipedia")
+in your code.
+
+As well as using these tools during development, it's often a good idea to also
+have them run during your build stages. They can be tied into build tools such
+as Maven or Gradle & also into continuous integration tools.
+
+### Eclipse Memory Analyzer
 
 Memory leaks happen, even in Java. Luckily, there are tools for that. The best
 tool I've used to fix these is the [Eclipse Memory Analyzer][mat]. It takes a
@@ -754,19 +885,30 @@ Heap dump file created
 Then you can open the *heapdump.hprof* file with the Memory Analyzer and see
 what's going on fast.
 
-# Resources
+## Resources
 
 Resources to help you become a Java master.
 
-## Books
+### Books
 
 * [Effective Java](http://www.amazon.com/Effective-Java-Edition-Joshua-Bloch/dp/0321356683)
 * [Java Concurrency in Practice](http://www.amazon.com/Java-Concurrency-Practice-Brian-Goetz/dp/0321349601)
+* [Clean Code](http://www.amazon.com/Clean-Code-Handbook-Software-Craftsmanship/dp/0132350882/)
 
-## Podcasts
+### Podcasts
 
-* [The Java Posse](http://www.javaposse.com/)
+* [The Java Posse](http://www.javaposse.com/) (*discontinued*)
+* [vJUG](http://virtualjug.com/)
+* [Les Cast Codeurs](https://lescastcodeurs.com/) (*French*)
+* [Java Pub House](http://www.javapubhouse.com/)
+* [Java Off Heap](http://www.javaoffheap.com/)
+* [Enterprise Java Newscast](http://www.enterprisejavanews.com)
 
+### Videos
+
+* [Effective Java - Still Effective After All These Years](https://www.youtube.com/watch?v=V1vQf4qyMXg)
+* [InfoQ](http://www.infoq.com/) - see especially [presentations](http://www.infoq.com/java/presentations/) and [interviews](http://www.infoq.com/java/interviews/)
+* [Parleys](https://www.parleys.com/)
 
 [immutablemap]: http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/ImmutableMap.html
 [immutablelist]: http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/ImmutableList.html
@@ -793,53 +935,55 @@ Resources to help you become a Java master.
 [artifactory]: http://www.jfrog.com/
 [mavenrepo]: http://stackoverflow.com/questions/364775/should-we-use-nexus-or-artifactory-for-a-maven-repo
 [artifactorymirror]: http://www.jfrog.com/confluence/display/RTF/Configuring+Artifacts+Resolution
-[gson]: https://code.google.com/p/google-gson/
+[gson]: https://github.com/google/gson
 [gsonguide]: https://sites.google.com/site/gson/gson-user-guide
 [joda]: http://www.joda.org/joda-time/
 [lombokguide]: http://jnb.ociweb.com/jnb/jnbJan2010.html
-[play]: http://www.playframework.com/
-[chef]: http://www.getchef.com/chef/
-[puppet]: http://puppetlabs.com/
+[play]: https://www.playframework.com/
+[chef]: https://www.chef.io/chef/
+[puppet]: https://puppetlabs.com/
 [ansible]: http://www.ansible.com/home
 [squadron]: http://www.gosquadron.com
 [googlestyle]: http://google.github.io/styleguide/javaguide.html
 [googlepractices]: http://google.github.io/styleguide/javaguide.html#s6-programming-practices
-[di]: http://en.wikipedia.org/wiki/Dependency_injection
+[di]: https://en.wikipedia.org/wiki/Dependency_injection
 [spring]: http://projects.spring.io/spring-framework/
 [springso]: http://programmers.stackexchange.com/questions/92393/what-does-the-spring-framework-do-should-i-use-it-why-or-why-not
 [java8]: http://www.java8.org/
+[javaslang]: http://javaslang.com/
 [javastream]: http://blog.hartveld.com/2013/03/jdk-8-33-stream-api.html
 [slf4j]: http://www.slf4j.org/
 [slf4jmanual]: http://www.slf4j.org/manual.html
 [junit]: http://junit.org/
+[testng]: http://testng.org
 [junitparam]: https://github.com/junit-team/junit/wiki/Parameterized-tests
 [junitrules]: https://github.com/junit-team/junit/wiki/Rules
 [junittheories]: https://github.com/junit-team/junit/wiki/Theories
 [junitassume]: https://github.com/junit-team/junit/wiki/Assumptions-with-assume
-[jmock]: http://jmock.org/
+[jmock]: http://www.jmock.org/
 [junitfixture]: https://github.com/junit-team/junit/wiki/Test-fixtures
 [initializingbean]: http://docs.spring.io/spring/docs/3.2.6.RELEASE/javadoc-api/org/springframework/beans/factory/InitializingBean.html
 [apachecommons]: http://commons.apache.org/
-[lombok]: http://projectlombok.org/
+[lombok]: https://projectlombok.org/
 [javatuples]: http://www.javatuples.org/
 [dontbean]: http://www.javapractices.com/topic/TopicAction.do?Id=84
-[nullable]: http://code.google.com/p/google-guice/wiki/UseNullable
+[nullable]: https://github.com/google/guice/wiki/UseNullable
 [optional]: http://www.oracle.com/technetwork/articles/java/java8-optional-2175753.html
 [jdbc]: http://docs.spring.io/spring/docs/4.0.3.RELEASE/javadoc-api/org/springframework/jdbc/core/JdbcTemplate.html
 [jooq]: http://www.jooq.org/
 [dao]: http://www.javapractices.com/topic/TopicAction.do?Id=66
-[gradle]: http://www.gradle.org/
+[gradle]: http://gradle.org/
 [intellij]: http://www.jetbrains.com/idea/
 [intellijexample]: http://i.imgur.com/92ztcCd.png
 [chronon]: http://blog.jetbrains.com/idea/2014/03/try-chronon-debugger-with-intellij-idea-13-1-eap/
 [eclipse]: https://www.eclipse.org/
 [dagger]: http://square.github.io/dagger/
-[guice]: https://code.google.com/p/google-guice/
+[guice]: https://github.com/google/guice
 [netbeans]: https://netbeans.org/
 [mat]: http://www.eclipse.org/mat/
 [jmap]: http://docs.oracle.com/javase/7/docs/technotes/tools/share/jmap.html
 [jrebel]: http://zeroturnaround.com/software/jrebel/
-[taint]: http://en.wikipedia.org/wiki/Taint_checking
+[taint]: https://en.wikipedia.org/wiki/Taint_checking
 [checker]: http://types.cs.washington.edu/checker-framework/
 [customchecker]: http://types.cs.washington.edu/checker-framework/tutorial/webpages/encryption-checker-cmd.html
 [builderex]: http://jlordiales.me/2012/12/13/the-builder-pattern-in-practice/
@@ -847,9 +991,10 @@ Resources to help you become a Java master.
 [dropwizard]: https://dropwizard.github.io/dropwizard/
 [jersey]: https://jersey.java.net/
 [springboot]: http://projects.spring.io/spring-boot/
-[spark]: http://www.sparkjava.com/
+[spark]: http://sparkjava.com/
 [assertj]: http://joel-costigliola.github.io/assertj/index.html
-[jaxrs]: http://en.wikipedia.org/wiki/Java_API_for_RESTful_Web_Services
-[playdoc]: http://www.playframework.com/documentation/2.3.x/Anatomy
+[jaxrs]: https://en.wikipedia.org/wiki/Java_API_for_RESTful_Web_Services
+[playdoc]: https://www.playframework.com/documentation/2.3.x/Anatomy
 [java8datetime]: http://www.oracle.com/technetwork/articles/java/jf14-date-time-2125367.html
 [checkedex]: http://docs.oracle.com/javase/7/docs/api/java/lang/Exception.html
+[the-worst-mistake-of-computer-science]: https://www.lucidchart.com/techblog/2015/08/31/the-worst-mistake-of-computer-science/
